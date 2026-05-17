@@ -6,6 +6,7 @@ from .knowledge import router as knowledge_router
 from .strategy import router as strategy_router
 from .persist import router as persist_router
 from .respond import router as respond_router
+from .slack import router as slack_router
 
 __all__ = [
     "intake_router",
@@ -16,4 +17,5 @@ __all__ = [
     "strategy_router",
     "persist_router",
     "respond_router",
+    "slack_router",
 ]

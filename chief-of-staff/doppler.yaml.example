@@ -1,0 +1,19 @@
+# Doppler project pinning for this directory.
+#
+# After running `doppler setup` interactively, Doppler writes a file like this
+# at the project root. Committing the *example* (not the real `doppler.yaml`)
+# keeps the convention discoverable without coupling teammates to your config.
+#
+# Steps for a new contributor:
+#   1. brew install dopplerhq/cli/doppler   # or see https://docs.doppler.com/docs/install-cli
+#   2. doppler login                         # browser auth
+#   3. doppler setup                         # answer prompts; writes doppler.yaml
+#   4. doppler run -- docker compose up --build
+#
+# Or pin manually by copying this file:
+#   cp doppler.yaml.example doppler.yaml
+#   # then edit `project:` and `config:` to your values
+
+setup:
+  - project: chief-of-staff           # the Doppler project that holds these secrets
+    config: dev                       # which config to read (dev / stg / prd)

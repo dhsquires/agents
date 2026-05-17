@@ -33,16 +33,50 @@ chain for every run. Per-request `model` overrides propagate through every layer
   `[MOCK]` data so the smoke test below produces a real reasoned answer without
   any external setup. Writes in mock mode are stubbed and return `preview: true`.
 
+## Secrets — Doppler
+
+This agent is wired for Doppler-managed secrets. `doppler run --` exports the
+configured secrets as env vars to the spawned process, which docker-compose
+then interpolates into the container environments.
+
+**One-time setup:**
+
+```bash
+# Install Doppler CLI if you don't already have it
+curl -Ls --tlsv1.2 https://cli.doppler.com/install.sh | sh
+
+# Authenticate (browser auth)
+doppler login
+
+# Pin this directory to a project + config. Doppler writes `doppler.yaml`.
+# Use the keys listed in `.env.example` as the Doppler secret names.
+cd chief-of-staff
+doppler setup
+```
+
+Required Doppler secrets (names exactly as below):
+
+| Secret | Required? | What it gates |
+|---|---|---|
+| `OPENROUTER_API_KEY` (or `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GOOGLE_API_KEY`) | yes | Every `.ai()` call |
+| `AI_MODEL` | recommended | Per-deploy default model string |
+| `LINEAR_API_KEY` | optional | Real Linear reads + writes (mocks otherwise) |
+| `SLACK_SIGNING_SECRET` | required for Slack trigger | Inbound webhook signature verification (CP-side) |
+| `SLACK_BOT_TOKEN` | required for Slack replies | `chat.postMessage` from the agent |
+
 ## Run
 
 ```bash
 cd chief-of-staff
-cp .env.example .env       # then paste your OPENROUTER_API_KEY into .env
-docker compose up --build
+doppler run -- docker compose up --build
 ```
 
 Wait until you see `agent registered` in the logs (~30–90 seconds first run while
 the control-plane image pulls).
+
+> **Local-dev fallback (no Doppler):** `cp .env.example .env`, edit, then
+> `docker compose up --build`. Compose's automatic `.env` loading picks the
+> values up the same way.
 
 ## Open the UI
 
@@ -133,6 +167,39 @@ To turn the `new_idea` plan into real Linear work:
 
 Use `preview` first. Always.
 
+## Slack integration
+
+When `SLACK_SIGNING_SECRET` and `SLACK_BOT_TOKEN` are present, the agent
+registers a webhook trigger that listens for `app_mention` events. Mentioning
+the bot in any channel where it's invited fires `chief_of_staff` in preview
+mode and posts the headline + summary + actions + next-steps back to the same
+thread.
+
+### Wire it up in Slack (one-time)
+
+1. <https://api.slack.com/apps> → **Create New App** → From scratch.
+2. **OAuth & Permissions** → add bot scopes: `app_mentions:read`,
+   `chat:write`. Install to the workspace; copy the **Bot User OAuth Token**
+   (starts with `xoxb-`) into Doppler as `SLACK_BOT_TOKEN`.
+3. **Basic Information** → **App Credentials** → copy the **Signing Secret**
+   into Doppler as `SLACK_SIGNING_SECRET`.
+4. **Event Subscriptions** → Enable Events. Request URL:
+   `https://<your-public-control-plane>/api/v1/triggers/slack` (the CP
+   exposes this; tunnel it with `ngrok http 8080` for local testing and use
+   that URL). Subscribe to bot event **`app_mention`**.
+5. Invite the bot to a channel (`/invite @chief-of-staff`) and mention it:
+   `@chief-of-staff cut p95 checkout latency in half by Q3`.
+
+### Confirm the trigger registered
+
+```bash
+curl -fsS http://localhost:8080/api/v1/triggers \
+  | jq '.triggers[] | select(.target_reasoner | contains("on_slack_mention")) | {source_name, target_reasoner, id}'
+```
+
+You should see a row with `source_name: "slack"` and
+`target_reasoner: "chief-of-staff.on_slack_mention"`.
+
 ## Showpiece — verifiable workflow chain
 
 ```bash
@@ -166,7 +233,8 @@ chief-of-staff/
 │   ├── knowledge.py             # curate_knowledge + check_for_conflicts + identify_canonical_topic + compose_canonical_note
 │   ├── strategy.py              # coordinate_strategy + map_stakeholders + check_alignment + draft_communications
 │   ├── persist.py               # persist_outcomes + write_knowledge_note_skill + Linear write skills
-│   └── respond.py               # compose_human_response
+│   ├── respond.py               # compose_human_response
+│   └── slack.py                 # on_slack_mention trigger + post_slack_reply_skill
 ├── Dockerfile
 ├── docker-compose.yml
 ├── requirements.txt

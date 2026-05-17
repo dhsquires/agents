@@ -30,6 +30,7 @@ from reasoners import (
     strategy_router,
     persist_router,
     respond_router,
+    slack_router,
 )
 from reasoners import helpers as H
 from reasoners.models import (
@@ -55,6 +56,7 @@ app.include_router(knowledge_router)
 app.include_router(strategy_router)
 app.include_router(persist_router)
 app.include_router(respond_router)
+app.include_router(slack_router)
 
 
 # ---- Entry reasoner ----

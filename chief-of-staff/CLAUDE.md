@@ -91,6 +91,17 @@ Persistence (`reasoners/persist.py`):
 Response (`reasoners/respond.py`):
 - `compose_human_response` (.ai) — final HumanResponse with citations
 
+Slack (`reasoners/slack.py`):
+- `on_slack_mention` — **triggered entry reasoner**:
+  `@on_event(source="slack", types=["app_mention"], secret_env="SLACK_SIGNING_SECRET")`.
+  Thin router: dedupes by `trigger.event_id` via `app.memory` scope=agent,
+  strips the bot mention from the directive, calls `chief_of_staff` in
+  preview mode, posts the response to the originating Slack thread. Stays
+  callable from direct curls / tests because `trigger` is `Optional`.
+- `post_slack_reply_skill` — thin httpx wrapper around
+  `https://slack.com/api/chat.postMessage`; reads `SLACK_BOT_TOKEN` at
+  request time and no-ops with a clear error when the token is unset.
+
 ## Why this architecture (not a chain)
 
 Three architectural choices make this composite intelligence:
@@ -142,6 +153,31 @@ auto-applying modify-intent deltas in iteration 2, an adversarial reviewer
   instance becomes a dict) is handled at every boundary.
 - LLM-to-LLM handoff is via prose strings (e.g., `render_planned_projects`,
   `render_linear_state`). Never raw JSON between two `.ai()` calls.
+
+## Secrets — Doppler
+
+This project pulls every runtime secret from **Doppler**. The canonical run
+command is:
+
+```bash
+doppler run -- docker compose up --build
+```
+
+`doppler run` exports configured secrets as env vars to docker-compose, and
+compose's `${VAR:-}` interpolation forwards them into the container
+environments. The list of expected secret names is the source of truth in
+`.env.example`. A local `.env` file is supported as a fallback (compose
+auto-loads it), but production deploys should always go through Doppler.
+
+**Hard rule: never hardcode a secret in source.** The trigger reasoner
+declares `secret_env="SLACK_SIGNING_SECRET"` — the control plane reads the
+env var at request time and the literal value never leaves the container.
+Same for `SLACK_BOT_TOKEN`, `LINEAR_API_KEY`, and the provider keys.
+
+When adding a new integration, document the required secret in
+`.env.example`, add it to docker-compose.yml under the right service's
+`environment:`, and update the Doppler-secrets table in README.md. Do not
+introduce a new way to load secrets.
 
 ## Model selection
 
@@ -222,6 +258,18 @@ If any of those fail, the change is not done.
 - ❌ Passing Pydantic instances directly across `app.call` boundaries
   expecting the type to survive. The serialization boundary always returns
   `dict` / `list[dict]`. Reconstruct with `Model(**payload)` or render to prose.
+- ❌ Doing long synthesis or multi-step reasoning **inside** `on_slack_mention`
+  (or any other triggered reasoner). The trigger reasoner is a thin router:
+  validate shape, dedupe, hand off to `chief_of_staff` via `app.call`, post
+  the reply. Stuffing logic into the trigger body breaks both observability
+  (the work doesn't get its own reasoner span) and reusability (you can't
+  fire the same logic from a curl).
+- ❌ Hardcoding a webhook secret, or using `secret_env="X"` for a secret X
+  that isn't actually configured into both the control plane AND the agent
+  container via docker-compose.yml. The CP verifies signatures before
+  dispatch — it needs the secret on its side.
+- ❌ Trusting that `transform=` will be re-run on a retried delivery. The CP
+  applies it once. Treat it as pure envelope-peeling — no I/O, no async.
 
 ## Extension points (where to safely add work)
 
@@ -233,10 +281,11 @@ If any of those fail, the change is not done.
   `retrieve_knowledge` in `intake.py` with a flow that embeds the directive
   and calls `router.memory.search_vectors(...)`. The schema already
   matches.
-- **Add Slack trigger**: decorate `chief_of_staff` (or a thin wrapper) with
-  `@on_event(source="slack", types=["app_mention"], secret_env="SLACK_SIGNING_SECRET")`
-  per the triggers reference. Keep the triggered reasoner thin — route into
-  the existing entry reasoner.
+- **Slack trigger already wired**: see `reasoners/slack.py`. Iteration-2
+  upgrades for it: add a slash command trigger (`@on_event(source="slack",
+  types=["slash_command"], secret_env="SLACK_SIGNING_SECRET")`), support
+  DMs (filter on `event.channel_type == "im"`), or add a confirmation
+  button (Block Kit) before promoting `execution_mode` to `"execute"`.
 - **Real-codebase awareness**: add `app.harness(provider="claude-code", ...)`
   inside `scope_initiative` for "explore the relevant code areas to ground
   the scope". Requires installing the Claude Code CLI in the Dockerfile and

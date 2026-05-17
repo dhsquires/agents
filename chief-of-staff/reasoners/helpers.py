@@ -159,7 +159,7 @@ def _mock_teams() -> list[dict]:
 INITIATIVES_QUERY = """
 query Initiatives($first: Int!) {
   initiatives(first: $first) {
-    nodes { id name description status { name } }
+    nodes { id name description status }
   }
 }
 """
@@ -181,9 +181,9 @@ query Projects($first: Int!) {
 
 ISSUES_QUERY = """
 query Issues($first: Int!) {
-  issues(first: $first) {
+  issues(first: $first, orderBy: updatedAt) {
     nodes {
-      id identifier title priority
+      id identifier title priority updatedAt
       state { name }
       assignee { name displayName }
       project { id }
@@ -215,7 +215,7 @@ async def linear_list_initiatives(limit: int = 20) -> list[dict]:
                 "id": n["id"],
                 "name": n.get("name", ""),
                 "description": n.get("description", ""),
-                "state": (n.get("status") or {}).get("name", "Unknown"),
+                "state": n.get("status") or "Unknown",
             }
             for n in nodes
         ]
@@ -269,6 +269,7 @@ async def linear_list_issues(limit: int = 50) -> list[dict]:
                 "assignee": ((n.get("assignee") or {}).get("displayName")
                              or (n.get("assignee") or {}).get("name")),
                 "priority": n.get("priority", 0),
+                "updated_at": n.get("updatedAt"),
             }
             for n in nodes
         ]
@@ -423,13 +424,14 @@ def render_linear_state(state: dict) -> str:
                 f"progress: {p.get('completed_issue_count')}/{p.get('total_issue_count')})"
             )
     if issues:
-        lines.append("RECENT ISSUES:")
+        lines.append("RECENT ISSUES (newest first by updated_at):")
         for it in issues:
             extra = f" — {it.get('blocked_reason')}" if it.get("blocked_reason") else ""
+            updated = f" updated={it.get('updated_at')}" if it.get("updated_at") else ""
             lines.append(
                 f"  - [{it.get('identifier') or it.get('id')}] {it.get('title')} "
                 f"(state: {it.get('state')}, assignee: {it.get('assignee')}, "
-                f"project: {it.get('project_id')}){extra}"
+                f"project: {it.get('project_id')}){updated}{extra}"
             )
     if teams:
         lines.append("TEAMS:")

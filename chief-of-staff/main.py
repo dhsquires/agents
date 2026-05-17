@@ -44,7 +44,7 @@ from reasoners.models import (
 app = Agent(
     node_id=os.getenv("AGENT_NODE_ID", "chief-of-staff"),
     agentfield_server=os.getenv("AGENTFIELD_SERVER", "http://localhost:8080"),
-    ai_config=AIConfig(model=os.getenv("AI_MODEL", "openrouter/google/gemini-2.5-flash")),
+    ai_config=AIConfig(model=os.getenv("AI_MODEL", "anthropic/claude-sonnet-4-6")),
     dev_mode=True,
 )
 

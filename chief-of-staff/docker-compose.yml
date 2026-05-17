@@ -30,7 +30,7 @@ services:
       LINEAR_API_KEY: ${LINEAR_API_KEY:-}
       SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN:-}
       SLACK_SIGNING_SECRET: ${SLACK_SIGNING_SECRET:-}
-      AI_MODEL: ${AI_MODEL:-openrouter/google/gemini-2.5-flash}
+      AI_MODEL: ${AI_MODEL:-anthropic/claude-sonnet-4-6}
       PORT: ${PORT:-8001}
     ports:
       - "${AGENT_NODE_PORT:-8001}:8001"

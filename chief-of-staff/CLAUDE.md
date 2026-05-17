@@ -181,13 +181,16 @@ introduce a new way to load secrets.
 
 ## Model selection
 
-- Default model: `openrouter/google/gemini-2.5-flash` via `AI_MODEL` env.
-  Fast and cheap; well-suited to a multi-call composite pipeline.
+- Default model: `anthropic/claude-sonnet-4-6` via `AI_MODEL` env, calling
+  the Anthropic API directly with `ANTHROPIC_API_KEY`. Sonnet 4.6 is slower
+  per call than a flash-tier model, so the canonical smoke test always uses
+  the async endpoint — never sync.
 - The entry reasoner accepts an optional `model` parameter that propagates
   through every `app.call(..., model=model)` and every `router.ai(..., model=model)`.
   Per-request A/B testing requires no redeploy.
-- Provider keys supported: `OPENROUTER_API_KEY` (default), `OPENAI_API_KEY`,
-  `ANTHROPIC_API_KEY`, `GOOGLE_API_KEY` — any LiteLLM-compatible model works.
+- Provider keys supported: `ANTHROPIC_API_KEY` (configured default),
+  `OPENROUTER_API_KEY`, `OPENAI_API_KEY`, `GOOGLE_API_KEY` — any
+  LiteLLM-compatible model works.
 
 ## Linear integration
 

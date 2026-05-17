@@ -58,7 +58,7 @@ Required Doppler secrets (names exactly as below):
 
 | Secret | Required? | What it gates |
 |---|---|---|
-| `OPENROUTER_API_KEY` (or `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GOOGLE_API_KEY`) | yes | Every `.ai()` call |
+| `ANTHROPIC_API_KEY` (configured default — Sonnet 4.6) | yes (or one of OPENROUTER/OPENAI/GOOGLE) | Every `.ai()` call |
 | `AI_MODEL` | recommended | Per-deploy default model string |
 | `LINEAR_API_KEY` | optional | Real Linear reads + writes (mocks otherwise) |
 | `SLACK_SIGNING_SECRET` | required for Slack trigger | Inbound webhook signature verification (CP-side) |
@@ -114,7 +114,7 @@ EXEC_ID=$(curl -sS -X POST http://localhost:8080/api/v1/execute/async/chief-of-s
     "input": {
       "directive": "We need to cut p95 checkout latency in half by Q3. Spin up an initiative, draft the projects and the first wave of issues, and flag what could go wrong.",
       "execution_mode": "preview",
-      "model": "openrouter/google/gemini-2.5-flash"
+      "model": "anthropic/claude-sonnet-4-6"
     }
   }' | jq -r '.execution_id')
 echo "Execution: $EXEC_ID"
@@ -134,16 +134,16 @@ done
 
 ```bash
 # status_check
-'{"input": {"directive": "What is the current status of every active engineering initiative? Where are we stuck?", "model": "openrouter/google/gemini-2.5-flash"}}'
+'{"input": {"directive": "What is the current status of every active engineering initiative? Where are we stuck?", "model": "anthropic/claude-sonnet-4-6"}}'
 
 # modify
-'{"input": {"directive": "Deprioritize ENG-211 to medium and reassign it to the Reliability team — it is blocked on shared fixtures and should wait.", "model": "openrouter/google/gemini-2.5-flash"}}'
+'{"input": {"directive": "Deprioritize ENG-211 to medium and reassign it to the Reliability team — it is blocked on shared fixtures and should wait.", "model": "anthropic/claude-sonnet-4-6"}}'
 
 # knowledge_update
-'{"input": {"directive": "Decision: we standardize on the Postgres pgvector extension for all new embedding storage. We are sunsetting Pinecone for new use cases.", "model": "openrouter/google/gemini-2.5-flash"}}'
+'{"input": {"directive": "Decision: we standardize on the Postgres pgvector extension for all new embedding storage. We are sunsetting Pinecone for new use cases.", "model": "anthropic/claude-sonnet-4-6"}}'
 
 # strategic
-'{"input": {"directive": "Engineering is misaligned with Product on the 2026 reliability roadmap. Map the stakeholders and draft messages to get us aligned.", "model": "openrouter/google/gemini-2.5-flash"}}'
+'{"input": {"directive": "Engineering is misaligned with Product on the 2026 reliability roadmap. Map the stakeholders and draft messages to get us aligned.", "model": "anthropic/claude-sonnet-4-6"}}'
 ```
 
 ### Actuating real Linear writes (iteration 2)

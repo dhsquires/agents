@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "engram": {
+      "command": "node",
+      "args": ["/ABSOLUTE/PATH/TO/agents/dist/index.js"],
+      "env": {
+        "ENGRAM_BRAIN_DIR": "/ABSOLUTE/PATH/TO/agents/brain",
+        "ENGRAM_DB_PATH": "/ABSOLUTE/PATH/TO/.engram/engram.sqlite"
+      }
+    }
+  }
+}

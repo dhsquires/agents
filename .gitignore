@@ -12,3 +12,17 @@ Thumbs.db
 # IDE files
 .vscode/
 .idea/
+
+# Node / TypeScript build
+node_modules/
+dist/
+*.log
+.env
+.env.local
+
+# Engram derived index (rebuildable from the OKF bundle in git)
+.engram/
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm

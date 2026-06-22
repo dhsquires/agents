@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "frameworks-plugin",
+  "displayName": "Master Framework Compendium",
+  "version": "1.0.0",
+  "description": "28 field-tested thinking frameworks for strategy, decisions, communication, product, org design, and productivity — packaged as skills, orchestrator agents, slash commands, and a framework-suggestion hook.",
+  "author": {
+    "name": "dhsquires",
+    "url": "https://github.com/dhsquires"
+  },
+  "homepage": "https://github.com/dhsquires/frameworks-plugin",
+  "repository": "https://github.com/dhsquires/frameworks-plugin",
+  "license": "MIT",
+  "keywords": [
+    "frameworks",
+    "strategy",
+    "decision-making",
+    "product-management",
+    "communication",
+    "mental-models",
+    "negotiation",
+    "prioritization"
+  ]
+}

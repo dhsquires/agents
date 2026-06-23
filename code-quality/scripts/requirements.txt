@@ -1,0 +1,7 @@
+# The code-quality engine runs on the Python 3.9+ standard library alone —
+# no third-party packages are required.
+#
+# These are OPTIONAL and only enhance accuracy/coverage if installed:
+#   radon>=6.0        # cross-check Python complexity/MI
+#   lizard>=1.17      # multi-language cyclomatic complexity
+#   coverage>=7.0     # produce coverage.xml/json consumed via --coverage-file

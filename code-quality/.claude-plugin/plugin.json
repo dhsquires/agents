@@ -1,0 +1,20 @@
+{
+  "name": "code-quality",
+  "version": "0.1.0",
+  "description": "Measure code maintainability & complexity the way elite engineering teams do: cyclomatic & cognitive complexity, Maintainability Index, Halstead volume, coupling/instability, SQALE technical-debt ratio, plus git-history hotspots, change coupling and bus-factor risk. Runs locally, pre-commit, on PRs and in CI.",
+  "author": {
+    "name": "dhsquires"
+  },
+  "keywords": [
+    "code-quality",
+    "metrics",
+    "maintainability",
+    "complexity",
+    "technical-debt",
+    "ci"
+  ],
+  "commands": "./commands",
+  "agents": "./agents",
+  "skills": "./skills",
+  "hooks": "./hooks/hooks.json"
+}

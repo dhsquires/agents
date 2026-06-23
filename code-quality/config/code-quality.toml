@@ -1,0 +1,60 @@
+# code-quality configuration (example).
+#
+# Copy this file to the repository root as `code-quality.toml` to override the
+# built-in defaults. The engine also accepts a [tool.code-quality] table, so you
+# can keep these settings in pyproject.toml instead if you prefer.
+#
+# All values below are the defaults — delete what you don't need to change.
+
+[cyclomatic]              # McCabe cyclomatic complexity, per function
+green = 10                # < 10 healthy
+yellow = 15               # 10-15 review (SonarQube default warning)
+refactor = 25             # > 25 high-risk
+
+[cognitive]               # SonarSource cognitive complexity, per function
+warn = 15                 # SonarQube default
+refactor = 25
+
+[maintainability]         # normalised 0-100 Maintainability Index, per file
+green = 20                # >= 20 healthy (Radon grade A)
+yellow = 10               # 10-19 moderate (B); < 10 debt hotspot (C)
+
+[coupling]                # efferent coupling (fan-out), per file/module
+investigate = 14          # > 14 correlates with higher fault probability
+
+[coverage]
+min = 80.0                # % line coverage expected on core logic
+
+[comments]
+min_ratio = 0.05          # comment lines / code lines
+
+[hotspots]                # behavioural git-history analysis
+top = 20
+since_days = 90
+
+[tdr]                     # SQALE Technical Debt Ratio model
+dev_cost_min_per_loc = 30
+cost_high_complexity_min = 60
+cost_med_complexity_min = 20
+cost_low_maintainability_min = 120
+cost_high_coupling_min = 45
+grade_a = 5               # ratio % thresholds for letter grades
+grade_b = 10
+grade_c = 20
+grade_d = 50
+
+[gate]                    # CI / pre-commit gate — build fails when exceeded
+max_function_cyclomatic = 25
+max_function_cognitive = 30
+min_file_maintainability = 10
+max_file_coupling = 30
+max_tdr_percent = 20.0
+min_coverage = 0.0        # 0 disables the coverage gate
+fail_on = "error"         # "error" | "warning" | "never"
+
+# Directories never analysed (in addition to the built-in list).
+exclude = [
+  ".git", "node_modules", "venv", ".venv", "dist", "build",
+  "__pycache__", ".mypy_cache", ".pytest_cache", "vendor",
+  "site-packages", ".next", "coverage", "target",
+]

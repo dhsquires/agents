@@ -1,0 +1,116 @@
+name: Code Quality
+
+# Runs three ways:
+#   • workflow_dispatch  → manual run (whole repo or changed-only) from the
+#                           Actions tab, "before commits".
+#   • pull_request       → analyses the files the PR changes and posts a sticky
+#                           report comment; fails the check on gate violations.
+#   • push (main/master) → full-repo CI gate + trend artifact.
+
+on:
+  workflow_dispatch:
+    inputs:
+      scope:
+        description: "Analysis scope"
+        type: choice
+        default: full
+        options: [full, changed-only]
+      base:
+        description: "Base ref for changed-only (e.g. origin/main)"
+        type: string
+        default: origin/main
+  pull_request:
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: code-quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  metrics:
+    name: Maintainability & complexity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history for churn / changed-only diffs
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Determine scope
+        id: scope
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "args=analyze --changed-only --base origin/${{ github.event.pull_request.base.ref }}" >> "$GITHUB_OUTPUT"
+            echo "title=Code Quality — PR changed files" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.scope }}" = "changed-only" ]; then
+            echo "args=analyze --changed-only --base ${{ inputs.base }}" >> "$GITHUB_OUTPUT"
+            echo "title=Code Quality — changed files" >> "$GITHUB_OUTPUT"
+          else
+            echo "args=analyze . --behavioral" >> "$GITHUB_OUTPUT"
+            echo "title=Code Quality — full repository" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run analysis (Markdown report)
+        id: analyze
+        run: |
+          set +e
+          python3 scripts/code-quality.py ${{ steps.scope.outputs.args }} \
+            --gate --format md --output code-quality-report.md
+          echo "status=$?" >> "$GITHUB_OUTPUT"
+          set -e
+
+      - name: Run analysis (JSON artifact)
+        run: |
+          python3 scripts/code-quality.py ${{ steps.scope.outputs.args }} \
+            --format json --output code-quality-report.json || true
+
+      - name: Print report to log
+        if: always()
+        run: cat code-quality-report.md || true
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-quality-reports
+          path: |
+            code-quality-report.md
+            code-quality-report.json
+          if-no-files-found: ignore
+
+      - name: Post / update PR comment
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let body = '## 📊 Code Quality Report\n\n_No report generated._';
+            try { body = fs.readFileSync('code-quality-report.md', 'utf8'); } catch (e) {}
+            const marker = '<!-- code-quality-report -->';
+            body = `${marker}\n${body}`;
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const { data: comments } = await github.rest.issues.listComments({ owner, repo, issue_number });
+            const existing = comments.find(c => c.body && c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }
+
+      - name: Enforce quality gate
+        if: always()
+        run: |
+          if [ "${{ steps.analyze.outputs.status }}" != "0" ]; then
+            echo "::error::Code quality gate failed — see the report above."
+            exit 1
+          fi
+          echo "Code quality gate passed."

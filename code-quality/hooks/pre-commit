@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# Standalone git pre-commit hook (works without Claude Code).
+#
+# Install:
+#   ln -sf ../../hooks/pre-commit .git/hooks/pre-commit
+#   # or: cp hooks/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+#
+# Runs the code-quality gate on staged files. Blocks the commit on error-level
+# violations. Bypass once with `git commit --no-verify`, or set
+# gate.fail_on = "never" in code-quality.toml to disable.
+
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+engine="$repo_root/scripts/code-quality.py"
+
+if [ ! -f "$engine" ]; then
+  # Plugin layout: engine may live elsewhere; try a couple of common spots.
+  for cand in "$repo_root/code-quality/scripts/code-quality.py"; do
+    [ -f "$cand" ] && engine="$cand" && break
+  done
+fi
+[ -f "$engine" ] || { echo "code-quality: engine not found, skipping gate."; exit 0; }
+
+if python3 "$engine" analyze --staged --gate --format text; then
+  exit 0
+fi
+
+echo
+echo "Commit blocked by the code-quality gate. Fix the errors above, or run"
+echo "  git commit --no-verify"
+echo "to bypass once."
+exit 1

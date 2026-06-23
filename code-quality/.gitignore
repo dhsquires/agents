@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.mypy_cache/
+.pytest_cache/
+.venv/
+venv/
+*.egg-info/
+code-quality-report.md
+code-quality-report.json
+report.md
+report.json
+coverage.xml
+.coverage
+htmlcov/
+node_modules/

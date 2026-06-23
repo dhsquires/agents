@@ -1,0 +1,17 @@
+{
+  "name": "code-quality",
+  "owner": {
+    "name": "dhsquires"
+  },
+  "metadata": {
+    "description": "Code maintainability & complexity metrics for Claude Code.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "code-quality",
+      "source": "./",
+      "description": "Cyclomatic & cognitive complexity, Maintainability Index, Halstead volume, coupling, SQALE technical-debt ratio, and git-history hotspots — as slash commands, a skill, a subagent, and a CI/pre-commit workflow."
+    }
+  ]
+}

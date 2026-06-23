@@ -1,0 +1,8 @@
+# Active configuration for this repository (the code-quality project itself).
+# See config/code-quality.toml for the fully-documented example with every
+# tunable option.
+
+[gate]
+fail_on = "error"          # warnings are advisory; only errors fail the build
+max_function_cognitive = 30
+min_file_maintainability = 10
